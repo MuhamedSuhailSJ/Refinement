@@ -1,0 +1,251 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isWorkspaceOwner(workspaceId) {
+      return isSignedIn() && workspaceId == request.auth.uid;
+    }
+
+    function parentWorkspaceOwned(workspaceId) {
+      return exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == request.auth.uid;
+    }
+
+    function isValidWorkspace(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'name', 'createdAt', 'updatedAt']) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTeam(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'code', 'leadName', 'sprintCapacityPoints', 'focusArea', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'name', 'code', 'leadName', 'sprintCapacityPoints', 'focusArea', 'createdAt', 'updatedAt']) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.code is string && data.code.size() >= 1 && data.code.size() <= 12 &&
+        data.leadName is string && data.leadName.size() >= 1 && data.leadName.size() <= 80 &&
+        data.sprintCapacityPoints is number && data.sprintCapacityPoints >= 0 && data.sprintCapacityPoints <= 1000 &&
+        data.focusArea is string && data.focusArea.size() >= 1 && data.focusArea.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidMember(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'role', 'weeklyCapacityHours', 'skills', 'teamAllocations', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'name', 'role', 'weeklyCapacityHours', 'skills', 'teamAllocations', 'createdAt', 'updatedAt']) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.role is string && data.role.size() >= 1 && data.role.size() <= 80 &&
+        data.weeklyCapacityHours is number && data.weeklyCapacityHours >= 1 && data.weeklyCapacityHours <= 80 &&
+        data.skills is list && data.skills.size() <= 12 &&
+        (data.skills.size() == 0 || data.skills[0] is string) &&
+        data.teamAllocations is list && data.teamAllocations.size() <= 12 &&
+        (data.teamAllocations.size() == 0 || data.teamAllocations[0] is map) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFeature(data) {
+      return data.keys().hasAll(['ownerId', 'title', 'description', 'priority', 'targetQuarter', 'teamId', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'title', 'description', 'priority', 'targetQuarter', 'teamId', 'status', 'createdAt', 'updatedAt']) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.description is string && data.description.size() <= 1000 &&
+        data.priority in ['Critical', 'High', 'Medium', 'Low'] &&
+        data.targetQuarter is string && data.targetQuarter.size() >= 1 && data.targetQuarter.size() <= 24 &&
+        isValidId(data.teamId) &&
+        data.status in ['Discovery', 'Refining', 'Ready', 'In Delivery'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSprint(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'goal', 'startDate', 'endDate', 'status', 'order', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'name', 'goal', 'startDate', 'endDate', 'status', 'order', 'createdAt', 'updatedAt']) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.goal is string && data.goal.size() <= 300 &&
+        data.startDate is string && data.startDate.size() >= 1 && data.startDate.size() <= 24 &&
+        data.endDate is string && data.endDate.size() >= 1 && data.endDate.size() <= 24 &&
+        data.status in ['Active', 'Planned', 'Horizon'] &&
+        data.order is number && data.order >= 0 && data.order <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidStory(data) {
+      return data.keys().hasAll(['ownerId', 'title', 'description', 'featureId', 'teamId', 'sprintId', 'assigneeId', 'refinementStage', 'storyPoints', 'estimatedHours', 'priority', 'requiredSkills', 'dorChecklist', 'order', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'title', 'description', 'featureId', 'teamId', 'sprintId', 'assigneeId', 'refinementStage', 'storyPoints', 'estimatedHours', 'priority', 'requiredSkills', 'dorChecklist', 'order', 'createdAt', 'updatedAt']) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+        data.description is string && data.description.size() <= 1200 &&
+        isValidId(data.featureId) &&
+        isValidId(data.teamId) &&
+        data.sprintId is string && data.sprintId.size() <= 128 &&
+        data.assigneeId is string && data.assigneeId.size() <= 128 &&
+        data.refinementStage in ['Raw Intake', 'Triage & Sizing', 'Skill & Capacity Fit', 'Ready for Sprint'] &&
+        data.storyPoints is number && data.storyPoints >= 0 && data.storyPoints <= 100 &&
+        data.estimatedHours is number && data.estimatedHours >= 0 && data.estimatedHours <= 500 &&
+        data.priority in ['Critical', 'High', 'Medium', 'Low'] &&
+        data.requiredSkills is list && data.requiredSkills.size() <= 12 &&
+        (data.requiredSkills.size() == 0 || data.requiredSkills[0] is string) &&
+        data.dorChecklist is map &&
+        data.dorChecklist.keys().hasAll(['acceptanceCriteria', 'dependenciesCleared', 'sized', 'skillsMatched']) &&
+        data.dorChecklist.keys().hasOnly(['acceptanceCriteria', 'dependenciesCleared', 'sized', 'skillsMatched']) &&
+        data.dorChecklist.acceptanceCriteria is bool &&
+        data.dorChecklist.dependenciesCleared is bool &&
+        data.dorChecklist.sized is bool &&
+        data.dorChecklist.skillsMatched is bool &&
+        data.order is number && data.order >= 0 && data.order <= 10000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    match /workspaces/{workspaceId} {
+      allow get: if isValidId(workspaceId) && isWorkspaceOwner(workspaceId);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isValidId(workspaceId) &&
+        isWorkspaceOwner(workspaceId) &&
+        isValidWorkspace(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(workspaceId) &&
+        isWorkspaceOwner(workspaceId) &&
+        isValidWorkspace(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'updatedAt']);
+      allow delete: if isValidId(workspaceId) && isWorkspaceOwner(workspaceId);
+
+      match /teams/{teamId} {
+        allow get: if isValidId(workspaceId) && isValidId(teamId) && isWorkspaceOwner(workspaceId);
+        allow list: if isValidId(workspaceId) && isWorkspaceOwner(workspaceId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(workspaceId) && isValidId(teamId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidTeam(incoming()) &&
+          parentWorkspaceOwned(workspaceId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time;
+        allow update: if isValidId(workspaceId) && isValidId(teamId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidTeam(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'code', 'leadName', 'sprintCapacityPoints', 'focusArea', 'updatedAt']);
+        allow delete: if isValidId(workspaceId) && isValidId(teamId) && isWorkspaceOwner(workspaceId);
+      }
+
+      match /members/{memberId} {
+        allow get: if isValidId(workspaceId) && isValidId(memberId) && isWorkspaceOwner(workspaceId);
+        allow list: if isValidId(workspaceId) && isWorkspaceOwner(workspaceId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(workspaceId) && isValidId(memberId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidMember(incoming()) &&
+          parentWorkspaceOwned(workspaceId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time;
+        allow update: if isValidId(workspaceId) && isValidId(memberId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidMember(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role', 'weeklyCapacityHours', 'skills', 'teamAllocations', 'updatedAt']);
+        allow delete: if isValidId(workspaceId) && isValidId(memberId) && isWorkspaceOwner(workspaceId);
+      }
+
+      match /features/{featureId} {
+        allow get: if isValidId(workspaceId) && isValidId(featureId) && isWorkspaceOwner(workspaceId);
+        allow list: if isValidId(workspaceId) && isWorkspaceOwner(workspaceId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(workspaceId) && isValidId(featureId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidFeature(incoming()) &&
+          parentWorkspaceOwned(workspaceId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time;
+        allow update: if isValidId(workspaceId) && isValidId(featureId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidFeature(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'priority', 'targetQuarter', 'teamId', 'status', 'updatedAt']);
+        allow delete: if isValidId(workspaceId) && isValidId(featureId) && isWorkspaceOwner(workspaceId);
+      }
+
+      match /sprints/{sprintId} {
+        allow get: if isValidId(workspaceId) && isValidId(sprintId) && isWorkspaceOwner(workspaceId);
+        allow list: if isValidId(workspaceId) && isWorkspaceOwner(workspaceId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(workspaceId) && isValidId(sprintId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidSprint(incoming()) &&
+          parentWorkspaceOwned(workspaceId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time;
+        allow update: if isValidId(workspaceId) && isValidId(sprintId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidSprint(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'goal', 'startDate', 'endDate', 'status', 'order', 'updatedAt']);
+        allow delete: if isValidId(workspaceId) && isValidId(sprintId) && isWorkspaceOwner(workspaceId);
+      }
+
+      match /stories/{storyId} {
+        allow get: if isValidId(workspaceId) && isValidId(storyId) && isWorkspaceOwner(workspaceId);
+        allow list: if isValidId(workspaceId) && isWorkspaceOwner(workspaceId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(workspaceId) && isValidId(storyId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidStory(incoming()) &&
+          parentWorkspaceOwned(workspaceId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time;
+        allow update: if isValidId(workspaceId) && isValidId(storyId) &&
+          isWorkspaceOwner(workspaceId) &&
+          isValidStory(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['refinementStage', 'dorChecklist', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['sprintId', 'order', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['assigneeId', 'teamId', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'featureId', 'teamId', 'sprintId', 'assigneeId', 'refinementStage', 'storyPoints', 'estimatedHours', 'priority', 'requiredSkills', 'dorChecklist', 'order', 'updatedAt'])
+          );
+        allow delete: if isValidId(workspaceId) && isValidId(storyId) && isWorkspaceOwner(workspaceId);
+      }
+    }
+  }
+}

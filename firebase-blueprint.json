@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "Workspace": {
+      "title": "Workspace",
+      "description": "Agile Scrum refinement and capacity planning workspace owned by an authenticated user.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "createdAt", "updatedAt"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "Cross-functional Scrum team with sprint point capacity.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "code": { "type": "string", "minLength": 1, "maxLength": 12 },
+        "leadName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "sprintCapacityPoints": { "type": "number" },
+        "focusArea": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "code", "leadName", "sprintCapacityPoints", "focusArea", "createdAt", "updatedAt"]
+    },
+    "Member": {
+      "title": "Member",
+      "description": "Team member with skills and multi-team capacity split percentages.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "role": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "weeklyCapacityHours": { "type": "number" },
+        "skills": { "type": "array" },
+        "teamAllocations": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "role", "weeklyCapacityHours", "skills", "teamAllocations", "createdAt", "updatedAt"]
+    },
+    "Feature": {
+      "title": "Feature",
+      "description": "Product feature grouping user stories through refinement.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "priority": { "type": "string", "enum": ["Critical", "High", "Medium", "Low"] },
+        "targetQuarter": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "teamId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "status": { "type": "string", "enum": ["Discovery", "Refining", "Ready", "In Delivery"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "title", "description", "priority", "targetQuarter", "teamId", "status", "createdAt", "updatedAt"]
+    },
+    "Sprint": {
+      "title": "Sprint",
+      "description": "Timeboxed Scrum sprint column for capacity-aware planning.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "goal": { "type": "string", "maxLength": 300 },
+        "startDate": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "endDate": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "status": { "type": "string", "enum": ["Active", "Planned", "Horizon"] },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "goal", "startDate", "endDate", "status", "order", "createdAt", "updatedAt"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "User story progressing from scratch intake through refinement to sprint execution.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "description": { "type": "string", "maxLength": 1200 },
+        "featureId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "teamId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "sprintId": { "type": "string", "maxLength": 128 },
+        "assigneeId": { "type": "string", "maxLength": 128 },
+        "refinementStage": { "type": "string", "enum": ["Raw Intake", "Triage & Sizing", "Skill & Capacity Fit", "Ready for Sprint"] },
+        "storyPoints": { "type": "number" },
+        "estimatedHours": { "type": "number" },
+        "priority": { "type": "string", "enum": ["Critical", "High", "Medium", "Low"] },
+        "requiredSkills": { "type": "array" },
+        "dorChecklist": { "type": "object" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "ownerId", "title", "description", "featureId", "teamId", "sprintId",
+        "assigneeId", "refinementStage", "storyPoints", "estimatedHours",
+        "priority", "requiredSkills", "dorChecklist", "order", "createdAt", "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/workspaces/{workspaceId}": {
+      "schema": { "$ref": "#/entities/Workspace" },
+      "description": "Top-level workspace document keyed by workspaceId (matches owner UID)."
+    },
+    "/workspaces/{workspaceId}/teams/{teamId}": {
+      "schema": { "$ref": "#/entities/Team" },
+      "description": "Teams inside a workspace."
+    },
+    "/workspaces/{workspaceId}/members/{memberId}": {
+      "schema": { "$ref": "#/entities/Member" },
+      "description": "Members and multi-team capacity splits inside a workspace."
+    },
+    "/workspaces/{workspaceId}/features/{featureId}": {
+      "schema": { "$ref": "#/entities/Feature" },
+      "description": "Features inside a workspace."
+    },
+    "/workspaces/{workspaceId}/sprints/{sprintId}": {
+      "schema": { "$ref": "#/entities/Sprint" },
+      "description": "Sprints inside a workspace."
+    },
+    "/workspaces/{workspaceId}/stories/{storyId}": {
+      "schema": { "$ref": "#/entities/Story" },
+      "description": "User stories inside a workspace."
+    }
+  }
+}
